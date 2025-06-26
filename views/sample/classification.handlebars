@@ -1,0 +1,48 @@
+<div class="container">
+  <div class="row">
+    <div class="col-1">
+      <form action="/sample/{{importId}}/export-csv" method="get">
+        <button class="btn btn-success" type="submit">Download</button>
+      </form>
+    </div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-1"></div>
+    <div class="col-2">
+      <form action="/sample/classification" method="post">
+        <input type="hidden" name="" />
+        <button class="btn btn-primary" type="submit">Classificar amostras</button>
+      </form>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 mt-3 text-center" style="overflow: auto;">
+      <table class="table table-hover">
+        <thead>
+          <th style="min-width: 200px;">Nome</th>
+          <th style="min-width: 200px;">Data de coleta</th>
+          <th style="min-width: 150px;">pH</th>
+          <th style="min-width: 150px;">Nitrogênio amoniacal</th>
+          <th style="min-width: 150px;">Conformidade</th>
+        </thead>
+        <tbody>
+          {{#each samples}}
+          <tr>
+            <td>{{this.data.point}}</td>
+            <td>{{this.data.date}}</td>
+            <td>{{this.ph}}</td>
+            <td>{{this.nh4}}</td>
+            <td>{{this.data.conformity}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

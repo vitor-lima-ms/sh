@@ -1,0 +1,115 @@
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 50px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="row text-center">
+        <h1>Gráfico de conformidade de amostras</h1>
+    </div>
+    <div class="chart-container">
+        <canvas id="conformityChart"></canvas>
+    </div>
+    <div class="row">
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"><button id="downloadBtnChart" class="btn btn-primary">Baixar</button></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+        <div class="col-1"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
+    <script>
+        Chart.register(ChartDataLabels)
+
+        const ctx = document.getElementById('conformityChart').getContext('2d');
+        const chartData = {{{ chartDataJSON }}};
+
+        const myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: '% de amostras',
+                    data: chartData.data,
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(255, 99, 132, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Distribuição de conformidade das amostras'
+                    },
+                    datalabels: {
+                        anchor: "end",
+                        align: "top",
+                        color: "#444",
+                        font: {
+                            weight: "bold"
+                        },
+                        formatter: function (value, context) {
+                            return value > 0 ? `${value.toFixed(1)} %` : null
+                        }
+                    }
+                }
+            }
+        });
+
+        const downloadBtnChart = document.getElementById("downloadBtnChart");
+        downloadBtnChart.addEventListener("click", function () {
+            const ctx = myChart.canvas.getContext("2d");
+            ctx.save();
+            ctx.globalCompositeOperation = "destination-over";
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, myChart.canvas.width, myChart.canvas.height)
+
+            const imageUrl = myChart.canvas.toDataURL('image/png');
+
+            ctx.restore()
+
+            const link = document.createElement("a");
+            link.download = "gráfico_conformidade_todos_os_pontos.png";
+            link.href = imageUrl;
+            link.click()
+        });
+    </script>
+</body>
+
+</html>

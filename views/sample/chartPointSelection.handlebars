@@ -1,0 +1,21 @@
+<div class="container">
+    <div class="row mb-3 text-center">
+        <h1>Selecione o(s) ponto(s)</h1>
+    </div>
+    <div class="row">
+        <div class="col-4"></div>
+        <div class="col-4">
+            <form action="/sample/chart-batch-export" method="post">
+                <div>
+                    <select class="form-control mb-3" name="pointsSelect" multiple required style="height: 500px;">
+                        {{#each points}}
+                        <option value="{{this}}">{{this}}</option>
+                        {{/each}}
+                    </select>
+                    <button class="btn btn-primary" type="submit">Baixar</button>
+                </div>
+            </form>
+        </div>
+        <div class="col-4"></div>
+    </div>
+</div>
