@@ -68,6 +68,7 @@ module.exports = class ParameterController {
     const maxValue = req.body.maxValue;
     const unit = req.body.unit;
 
+    // Verificando se o parâmetro editado existe
     const parameters = await Parameter.findAll({ raw: true });
     let count = 0;
     for (const parameterFor of parameters) {
@@ -81,6 +82,7 @@ module.exports = class ParameterController {
       res.redirect(`/parameter/edit/${id}`);
       return;
     }
+    //
 
     const parameterData = {
       name: name,
@@ -90,6 +92,14 @@ module.exports = class ParameterController {
     };
 
     await Parameter.update(parameterData, { where: { id: id } });
+
+    res.redirect("/parameter/list");
+  }
+
+  static async deleteParameter(req, res) {
+    const id = req.body.id;
+
+    await Parameter.destroy({ where: { id: id } });
 
     res.redirect("/parameter/list");
   }
