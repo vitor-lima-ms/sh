@@ -7,7 +7,6 @@ const { Op } = require("sequelize");
 const QuickChart = require("quickchart-js");
 const archiver = require("archiver");
 const { default: axios } = require("axios");
-const { error } = require("console");
 
 module.exports = class SampleController {
   static index(req, res) {
