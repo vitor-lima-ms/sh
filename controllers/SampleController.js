@@ -1,4 +1,5 @@
 const Sample = require("../models/Sample");
+const Parameter = require("../models/Parameter");
 
 const fs = require("fs");
 const csv = require("csv-parser");
@@ -199,68 +200,140 @@ module.exports = class SampleController {
       }
     }
 
-    const ironLimit = 0.3;
+    const dbParam = await Parameter.findOne({
+      raw: true,
+      where: { name: { [Op.like]: parameter } },
+    });
 
-    const configuration = {
-      type: "scatter",
-      data: {
-        datasets: [
-          {
-            label: `${parameter}`,
-            data: chartData,
-            backgroundColor: "rgba(0, 123, 255, 1)",
-            borderColor: "rgba(0, 123, 255, 1)",
-          },
-          {
-            type: "line",
-            label:
-              "Valor máximo permitido (CONAMA 357/05 - Classe II - Água Superficial - Água Doce)",
-            data: [
-              { x: initialDate, y: ironLimit },
-              { x: finalDate, y: ironLimit },
+    let configuration = {};
+    if (dbParam) {
+      if (!dbParam.minValue && dbParam.maxValue) {
+        configuration = {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: `${parameter}`,
+                data: chartData,
+                backgroundColor: "rgba(0, 123, 255, 1)",
+                borderColor: "rgba(0, 123, 255, 1)",
+              },
+              {
+                type: "line",
+                label: "Valor máximo permitido",
+                data: [
+                  { x: initialDate, y: dbParam.maxValue },
+                  { x: finalDate, y: dbParam.maxValue },
+                ],
+                borderColor: "red",
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
             ],
-            borderColor: "red",
-            borderWidth: 2,
-            borderDash: [5, 5],
-            pointRadius: 0,
-            fill: false,
           },
-        ],
-      },
-      options: {
-        plugins: {
-          title: {
-            display: true,
-            text: `Série histórica do ${parameter} para o ${point}`,
-            font: { size: 18 },
-          },
-          legend: {
-            position: "bottom",
-          },
-        },
-        scales: {
-          x: {
-            type: "time",
-            time: {
-              unit: "month",
-              displayFormats: {
-                month: "MMM/yyyy",
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: `Série histórica do ${parameter} para o ${point}`,
+                font: { size: 18 },
+              },
+              legend: {
+                position: "bottom",
               },
             },
-            title: {
-              display: false,
+            scales: {
+              x: {
+                type: "time",
+                time: {
+                  unit: "month",
+                  displayFormats: {
+                    month: "MMM/yyyy",
+                  },
+                },
+                title: {
+                  display: false,
+                },
+              },
+              y: {
+                type: "logarithmic",
+                title: {
+                  display: true,
+                  text: `${parameter}`,
+                },
+              },
             },
           },
-          y: {
-            type: "logarithmic",
-            title: {
-              display: true,
-              text: `${parameter}`,
+        };
+      } else if (dbParam.minValue && !dbParam.maxValue) {
+        configuration = {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: `${parameter}`,
+                data: chartData,
+                backgroundColor: "rgba(0, 123, 255, 1)",
+                borderColor: "rgba(0, 123, 255, 1)",
+              },
+              {
+                type: "line",
+                label: "Valor mínimo permitido",
+                data: [
+                  { x: initialDate, y: dbParam.minValue },
+                  { x: finalDate, y: dbParam.minValue },
+                ],
+                borderColor: "red",
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: `Série histórica do ${parameter} para o ${point}`,
+                font: { size: 18 },
+              },
+              legend: {
+                position: "bottom",
+              },
+            },
+            scales: {
+              x: {
+                type: "time",
+                time: {
+                  unit: "month",
+                  displayFormats: {
+                    month: "MMM/yyyy",
+                  },
+                },
+                title: {
+                  display: false,
+                },
+              },
+              y: {
+                type: "logarithmic",
+                title: {
+                  display: true,
+                  text: `${parameter}`,
+                },
+              },
             },
           },
-        },
-      },
-    };
+        };
+      } else if (dbParam.minValue && dbParam.maxValue) {
+      } else if (!dbParam.minValue && !dbParam.maxValue) {
+      }
+    } else {
+      return;
+    }
+
     const chart = new QuickChart();
     chart.setConfig(configuration);
     chart.setWidth(800);
