@@ -11,9 +11,6 @@
 
 <body>
   <ul class="nav nav-tabs bg-dark" data-bs-theme="dark">
-    <li class="nav-item">
-      <a class="nav-link active" aria-current="page" href="/">Home</a>
-    </li>
     <li class="nav-item dropdown">
       <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">Amostras</a>
       <ul class="dropdown-menu">
@@ -24,10 +21,18 @@
       </ul>
     </li>
     <li class="nav-item dropdown">
+      <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">Biblioteca de
+        parâmetros</a>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="/sample/import">Adicionar parâmetro</a></li>
+        <li><a class="dropdown-item" href="/sample/delete-import">Listar parâmetros</a></li>
+      </ul>
+    </li>
+    <li class="nav-item dropdown">
       <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false">Gráficos</a>
       <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="/sample/chart-all-points">Todos os pontos</a></li>
-        <li><a class="dropdown-item" href="/sample/chart-point-selection">Pontos específicos</a></li>
+        <li><a class="dropdown-item" href="/sample/sh-options">Série histórica - Visualização </a></li>
+        <li><a class="dropdown-item" href="/sample/chart-point-selection">Série histórica - Download</a></li>
       </ul>
     </li>
     {{!-- {{#if session.userid}}
