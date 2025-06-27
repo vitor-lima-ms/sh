@@ -129,6 +129,7 @@ app.get("/", SampleController.index);
 
 // Model
 const Sample = require("./models/Sample");
+const Parameter = require("./models/Parameter");
 const User = require("./models/User");
 
 // DB sync to start the app
