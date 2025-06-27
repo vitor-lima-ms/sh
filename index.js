@@ -119,11 +119,15 @@ app.use((req, res, next) => {
 const sampleRoutes = require("./routes/sampleRoutes");
 app.use("/sample", sampleRoutes);
 
+const parameterRoutes = require("./routes/parameterRoutes");
+app.use("/parameter", parameterRoutes);
+
 const authRoutes = require("./routes/authRoutes");
 app.use("/auth", authRoutes);
 
 // Controllers
 const SampleController = require("./controllers/SampleController");
+const ParameterController = require("./controllers/ParameterController");
 const AuthController = require("./controllers/AuthController");
 app.get("/", SampleController.index);
 
