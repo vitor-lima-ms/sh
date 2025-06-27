@@ -12,16 +12,8 @@ const Sample = db.define("Sample", {
     allowNull: false,
   },
   date: {
-    type: DataTypes.STRING,
+    type: DataTypes.DATEONLY,
     allowNull: false,
-  },
-  ph: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  nh4: {
-    type: DataTypes.STRING,
-    allowNull: true,
   },
   data: {
     type: DataTypes.JSON,

@@ -4,8 +4,7 @@ const multer = require("multer");
 
 const SampleController = require("../controllers/SampleController");
 
-router.get("/list", SampleController.listSamples1);
-router.get("/:importId/list", SampleController.listSamples2);
+router.get("/list", SampleController.listSamples);
 
 router.post("/delete", SampleController.deleteSample);
 
@@ -16,7 +15,6 @@ const upload = multer({ dest: "uploads" });
 router.get("/import", SampleController.importCsvGet);
 router.post(
   "/import",
-
   upload.single("csvFile"),
   SampleController.importCsvPost
 );
@@ -24,14 +22,8 @@ router.post(
 router.get("/delete-import", SampleController.deleteImportGet);
 router.post("/delete-import", SampleController.deleteImportPost);
 
-router.post("/pre-classification", SampleController.selectImportPost);
-
-router.post("/classification", SampleController.classification);
-
-router.get("/:importId/export-csv", SampleController.exportSamples);
-
-router.get("/chart-all-points", SampleController.chartAllPoints);
-router.get("/chart-point-selection", SampleController.chartPointSelection);
-router.post("/chart-batch-export", SampleController.chartBatchExport);
+router.get("/sh-options", SampleController.shOptions);
+router.get("/sh-point", SampleController.shPoint);
+router.get("/sh-bulk", SampleController.shBulk);
 
 module.exports = router;

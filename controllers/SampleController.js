@@ -4,37 +4,17 @@ const fs = require("fs");
 const csv = require("csv-parser");
 const { v4: uuidv4 } = require("uuid");
 const { Op } = require("sequelize");
-const iconv = require("iconv-lite");
-const { ChartJSNodeCanvas } = require("chartjs-node-canvas");
-const ChartDataLabels = require("chartjs-plugin-datalabels");
+const QuickChart = require("quickchart-js");
 const archiver = require("archiver");
+const { default: axios } = require("axios");
+const { error } = require("console");
 
 module.exports = class SampleController {
-  static async selectImportGet(req, res) {
-    const samples = await Sample.findAll();
-
-    let importIdsArray = [];
-    for (let sample of samples) {
-      if (!importIdsArray.includes(sample.dataValues.importId)) {
-        importIdsArray.push(sample.dataValues.importId);
-      }
-    }
-
-    res.render("sample/selectImport", { importIdsArray });
+  static index(req, res) {
+    res.render("sample/index");
   }
 
-  static async selectImportPost(req, res) {
-    const importId = req.body.importId;
-
-    const samples = await Sample.findAll({
-      raw: true,
-      where: { importId: importId, ph: { [Op.gt]: 0 }, nh4: { [Op.gt]: 0 } },
-    });
-
-    res.render("sample/classification", { samples, importId });
-  }
-
-  static async listSamples1(req, res) {
+  static async listSamples(req, res) {
     const search = req.query.search;
 
     let queryOptions = {
@@ -53,17 +33,6 @@ module.exports = class SampleController {
     res.render("sample/list", { samples });
   }
 
-  static async listSamples2(req, res) {
-    const importId = req.params.importId;
-
-    const samples = await Sample.findAll({
-      raw: true,
-      where: { importId: importId, ph: { [Op.gt]: 0 }, nh4: { [Op.gt]: 0 } },
-    });
-
-    res.render("sample/classification", { samples, importId });
-  }
-
   static async deleteSample(req, res) {
     await Sample.destroy({ where: { id: req.body.id } });
 
@@ -75,7 +44,6 @@ module.exports = class SampleController {
       raw: true,
       where: { id: req.params.id },
     });
-    console.log(sample);
 
     res.render("sample/edit", { sample });
   }
@@ -90,9 +58,6 @@ module.exports = class SampleController {
     for (const key in req.body) {
       variableData[key] = req.body[key];
     }
-
-    const dateArray = variableData.date.split("-");
-    variableData.date = `${dateArray[2]}/${dateArray[1]}/${dateArray[0]}`;
 
     sample.data = {
       ...sample.data,
@@ -146,15 +111,7 @@ module.exports = class SampleController {
               importId: currentImportId,
               point: item["point"],
               date: item["date"],
-              ph: item.parameters["ph"] ? item.parameters["ph"]["value"] : null,
-              nh4: item.parameters["nh4"]
-                ? item.parameters["nh4"]["value"]
-                : null,
               data: {
-                opUnit: item["opUnit"],
-                point: item["point"],
-                date: item["date"],
-                nature: item["nature"],
                 ...item.parameters,
               },
             };
@@ -193,257 +150,179 @@ module.exports = class SampleController {
     res.redirect("/sample/list");
   }
 
-  static async classification(req, res) {
+  static async shOptions(req, res) {
+    try {
+      const dbRows = await Sample.findAll({ raw: true });
+
+      const points = [];
+      const parameters = [];
+      for (const dbRow of dbRows) {
+        if (!points.includes(dbRow.point)) {
+          points.push(dbRow.point);
+        }
+
+        for (const [key, value] of Object.entries(dbRow.data)) {
+          if (!parameters.includes(key)) {
+            parameters.push(key);
+          }
+        }
+        points.sort();
+        parameters.sort();
+      }
+
+      res.render("sample/shOptions", { points, parameters });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  static async _generateChartBuffer(point, parameter, initialDate, finalDate) {
     const samples = await Sample.findAll({
       raw: true,
-      where: { ph: { [Op.gt]: 0 }, nh4: { [Op.gt]: 0 } },
-    });
-
-    for (const sample of samples) {
-      const ph = parseFloat(sample.ph.replace(",", "."));
-      const nh4 = parseFloat(sample.nh4.replace(",", "."));
-
-      if (ph <= 7.5) {
-        if (nh4 <= 3.7) {
-          sample.data["conformity"] = "Conforme";
-        } else {
-          sample.data["conformity"] = "Não conforme";
-        }
-      } else if (ph > 7.5 && ph <= 8) {
-        if (nh4 <= 2) {
-          sample.data["conformity"] = "Conforme";
-        } else {
-          sample.data["conformity"] = "Não conforme";
-        }
-      } else if (ph > 8 && ph <= 8.5) {
-        if (nh4 <= 1) {
-          sample.data["conformity"] = "Conforme";
-        } else {
-          sample.data["conformity"] = "Não conforme";
-        }
-      } else {
-        if (nh4 <= 0.5) {
-          sample.data["conformity"] = "Conforme";
-        } else {
-          sample.data["conformity"] = "Não conforme";
-        }
-      }
-
-      await Sample.update(sample, { where: { id: sample.id } });
-    }
-    res.redirect(`/sample/${samples[0].importId}/list`);
-  }
-
-  static async exportSamples(req, res) {
-    const importId = req.params.importId;
-    console.log(importId);
-
-    const samplesData = await Sample.findAll({
-      where: { importId: importId, ph: { [Op.gt]: 0 }, nh4: { [Op.gt]: 0 } },
-    });
-
-    const samples = samplesData.map((result) => result.get({ plain: true }));
-
-    const csvHeaders = [
-      "Ponto",
-      "Data de coleta",
-      "pH",
-      "Nitrogênio amoniacal",
-      "Conformidade",
-    ];
-
-    const escapeCsvValue = (value) => {
-      if (value === null || value === undefined) {
-        return "";
-      }
-      let strValue = String(value);
-      if (
-        strValue.includes(",") ||
-        strValue.includes('"') ||
-        strValue.includes("\n") ||
-        strValue.includes("\r")
-      ) {
-        return `"${strValue.replace(/"/g, '""')}"`;
-      }
-      return strValue;
-    };
-
-    const csvRows = samples.map((sample) => {
-      const point = sample.point;
-      const date = sample.date;
-      const ph = sample.ph;
-      const nh4 = sample.nh4;
-      const conformity = sample.data.conformity;
-
-      return [
-        escapeCsvValue(point),
-        escapeCsvValue(date),
-        escapeCsvValue(ph),
-        escapeCsvValue(nh4),
-        escapeCsvValue(conformity),
-      ];
-    });
-    const csvString = [csvHeaders.join(","), ...csvRows].join("\n");
-    const csvBufferLatin1 = iconv.encode(csvString, "latin1");
-
-    res.setHeader("Content-Type", "text/csv; charset=latin1"); // Alterado para latin1
-    res.setHeader("Content-Disposition", "attachment;");
-    res.status(200).send(csvBufferLatin1);
-  }
-
-  static async chartAllPoints(req, res) {
-    const classifiedSamples = await Sample.findAll({
-      raw: true,
       where: {
-        "data.conformity": { [Op.not]: null },
+        point: point,
+        date: { [Op.between]: [initialDate, finalDate] },
       },
+      order: [["date", "ASC"]],
     });
 
-    let accordingCount = 0;
-    let notAccordingCount = 0;
-    let totalCount = 0;
-    for (const sample of classifiedSamples) {
-      if (sample.data.conformity === "Conforme") {
-        accordingCount += 1;
-      } else {
-        notAccordingCount += 1;
+    let chartData = [];
+    for (const sample of Object.entries(samples)) {
+      if (sample[1].data && sample[1].data[parameter]) {
+        const parameterValue = parseFloat(
+          sample[1].data[parameter].value.replace(",", ".")
+        );
+
+        chartData.push({
+          x: sample[1].date,
+          y: parameterValue,
+        });
       }
-      totalCount += 1;
     }
 
-    const accordingPercent = (accordingCount / totalCount) * 100;
-    const notAccordingPercent = (notAccordingCount / totalCount) * 100;
+    const ironLimit = 0.3;
 
-    const chartData = {
-      labels: ["Conforme", "Não conforme"],
-      data: [accordingPercent, notAccordingPercent],
+    const configuration = {
+      type: "scatter",
+      data: {
+        datasets: [
+          {
+            label: `${parameter}`,
+            data: chartData,
+            backgroundColor: "rgba(0, 123, 255, 1)",
+            borderColor: "rgba(0, 123, 255, 1)",
+          },
+          {
+            type: "line",
+            label:
+              "Valor máximo permitido (CONAMA 357/05 - Classe II - Água Superficial - Água Doce)",
+            data: [
+              { x: initialDate, y: ironLimit },
+              { x: finalDate, y: ironLimit },
+            ],
+            borderColor: "red",
+            borderWidth: 2,
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          title: {
+            display: true,
+            text: `Série histórica do ${parameter} para o ${point}`,
+            font: { size: 18 },
+          },
+          legend: {
+            position: "bottom",
+          },
+        },
+        scales: {
+          x: {
+            type: "time",
+            time: {
+              unit: "month",
+              displayFormats: {
+                month: "MMM/yyyy",
+              },
+            },
+            title: {
+              display: false,
+            },
+          },
+          y: {
+            type: "logarithmic",
+            title: {
+              display: true,
+              text: `${parameter}`,
+            },
+          },
+        },
+      },
     };
+    const chart = new QuickChart();
+    chart.setConfig(configuration);
+    chart.setWidth(800);
+    chart.setHeight(600);
+    chart.setBackgroundColor("white");
+    chart.setVersion("3");
 
-    const chartDataJSON = JSON.stringify(chartData);
-
-    res.render("sample/chartAllPoints", { chartDataJSON: chartDataJSON });
+    const url = chart.getUrl();
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    return response.data;
   }
 
-  static async chartPointSelection(req, res) {
-    const samples = await Sample.findAll({ raw: true });
+  static async shPoint(req, res) {
+    const point = req.query.point;
+    const parameter = req.query.parameter;
+    const initialDate = req.query.initialDate;
+    const finalDate = req.query.finalDate;
 
-    const points = [];
-    for (const sample of samples) {
-      if (!points.includes(sample.point)) {
-        points.push(sample.point);
-      }
-    }
+    const imageBuffer = await SampleController._generateChartBuffer(
+      point,
+      parameter,
+      initialDate,
+      finalDate
+    );
 
-    points.sort();
-
-    res.render("sample/chartPointSelection", { points });
+    res.setHeader("Content-Type", "image/png");
+    res.send(imageBuffer);
   }
 
-  static async chartBatchExport(req, res) {
-    let points = req.body.pointsSelect;
+  static async shBulk(req, res) {
+    let points = req.query.points;
+    const parameter = req.query.parameter;
+    const initialDate = req.query.initialDate;
+    const finalDate = req.query.finalDate;
 
     if (!Array.isArray(points)) {
       points = [points];
     }
 
+    const zipFileName = `graficos.zip`;
+    res.attachment(zipFileName);
+
     const archive = archiver("zip", {
       zlib: { level: 9 },
     });
-
-    res.setHeader("Content-Type", "application/zip");
-    res.setHeader(
-      "Content-Disposition",
-      "attachment; filename=graficos_de_conformidade.zip"
-    );
-
+    archive.on("error", (error) => {
+      throw error;
+    });
     archive.pipe(res);
 
-    const width = 800;
-    const height = 600;
-    const chartJSNodeCanvas = new ChartJSNodeCanvas({
-      width,
-      height,
-      plugins: {
-        modern: [ChartDataLabels],
-      },
-    });
-
     for (const point of points) {
-      const samples = await Sample.findAll({
-        raw: true,
-        where: { point: point, "data.conformity": { [Op.not]: null } },
-      });
+      const imageBuffer = await SampleController._generateChartBuffer(
+        point,
+        parameter,
+        initialDate,
+        finalDate
+      );
 
-      if (samples.length === 0) {
-        continue;
-      }
+      const fileName = `grafico_${point}.png`;
 
-      let accordingCount = 0;
-      let notAccordingCount = 0;
-      for (const sample of samples) {
-        if (sample.data.conformity === "Conforme") {
-          accordingCount += 1;
-        } else {
-          notAccordingCount += 1;
-        }
-      }
-      const totalCount = samples.length;
-      const accordingPercent = (accordingCount / totalCount) * 100;
-      const notAccordingPercent = (notAccordingCount / totalCount) * 100;
-
-      const configuration = {
-        type: "bar",
-        data: {
-          labels: ["Conforme (%)", "Não conforme (%)"],
-          datasets: [
-            {
-              label: "Conformidade",
-              data: [
-                accordingPercent.toFixed(2),
-                notAccordingPercent.toFixed(2),
-              ],
-              backgroundColor: [
-                "rgba(75, 192, 192, 0.7)",
-                "rgba(255, 99, 132, 0.7)",
-              ],
-              borderColor: ["rgba(75, 192, 192, 1)", "rgba(255, 99, 132, 1)"],
-              borderWidth: 1,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: "top" },
-            title: {
-              display: function (context) {
-                if (!context.dataset) {
-                  return false;
-                }
-
-                return context.dataset.data[context.dataIndex] > 0;
-              },
-              text: `Gráfico de conformidade - ${point}`,
-            },
-            datalabels: {
-              anchor: "end",
-              align: "top",
-              color: "#444",
-              font: {
-                weight: "bold",
-              },
-              formatter: function (value, context) {
-                return value > 0 ? `${value} %` : null;
-              },
-            },
-          },
-        },
-      };
-      const imageBuffer = await chartJSNodeCanvas.renderToBuffer(configuration);
-
-      archive.append(imageBuffer, {
-        name: `grafico_conformidade_${point}.png`,
-      });
+      archive.append(imageBuffer, { name: fileName });
     }
     await archive.finalize();
   }

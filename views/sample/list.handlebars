@@ -29,22 +29,22 @@
         </thead>
         <tbody>
           {{#each samples}}
-            <tr>
-              <td>{{this.data.point}}</td>
-              <td>{{this.data.date}}</td>
-              <td>{{this.importId}}</td>
-              <td>
-                <form action="/sample/edit/{{this.id}}" method="get">
-                  <button class="btn btn-primary" type="submit">Editar</button>
-                </form>
-              </td>
-              <td>
-                <form action="/sample/delete" method="post">
-                  <input type="hidden" name="id" value="{{this.id}}" />
-                  <button class="btn btn-danger" type="submit">Excluir</button>
-                </form>
-              </td>
-            </tr>
+          <tr>
+            <td>{{this.point}}</td>
+            <td>{{this.date}}</td>
+            <td>{{this.importId}}</td>
+            <td>
+              <form action="/sample/edit/{{this.id}}" method="get">
+                <button class="btn btn-primary" type="submit">Editar</button>
+              </form>
+            </td>
+            <td>
+              <form action="/sample/delete" method="post">
+                <input type="hidden" name="id" value="{{this.id}}" />
+                <button class="btn btn-danger" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
           {{/each}}
         </tbody>
       </table>

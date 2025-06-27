@@ -125,7 +125,7 @@ app.use("/auth", authRoutes);
 // Controllers
 const SampleController = require("./controllers/SampleController");
 const AuthController = require("./controllers/AuthController");
-app.get("/", SampleController.selectImportGet);
+app.get("/", SampleController.index);
 
 // Model
 const Sample = require("./models/Sample");
