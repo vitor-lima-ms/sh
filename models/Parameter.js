@@ -15,6 +15,10 @@ const Parameter = db.define("Parameter", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  unit: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 });
 
 module.exports = Parameter;

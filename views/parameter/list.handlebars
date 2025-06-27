@@ -1,0 +1,55 @@
+<div class="container">
+  <div class="row">
+    <div class="col-12 mt-3 text-center">
+      <h1>Listagem de amostras</h1>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-4"></div>
+    <div class="col-4 mt-3 text-center">
+      <form action="/parameter/list" method="get">
+        <input type="text" name="search" placeholder="Nome do parâmetro" />
+        <button class="btn btn-secondary" type="submit">Buscar</button>
+      </form>
+    </div>
+    <div class="col-4 mt-3 text-start">
+      <form action="/parameter/list" method="get">
+        <button class="btn btn-warning" type="submit">Limpar busca</button>
+      </form>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-12 mt-3 text-center">
+      <table class="table">
+        <thead>
+          <th>Nome</th>
+          <th>Valor mínimo</th>
+          <th>Valor máximo</th>
+          <th>Unidade</th>
+          <th colspan="2">Ações</th>
+        </thead>
+        <tbody>
+          {{#each parameters}}
+          <tr>
+            <td>{{this.name}}</td>
+            <td>{{this.minValue}}</td>
+            <td>{{this.maxValue}}</td>
+            <td>{{this.unit}}</td>
+            <td>
+              <form action="/parameter/edit/{{this.id}}" method="get">
+                <button class="btn btn-primary" type="submit">Editar</button>
+              </form>
+            </td>
+            <td>
+              <form action="/parameter/delete" method="post">
+                <input type="hidden" name="id" value="{{this.id}}" />
+                <button class="btn btn-danger" type="submit">Excluir</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
