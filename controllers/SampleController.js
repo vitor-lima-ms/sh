@@ -8,6 +8,7 @@ const { Op } = require("sequelize");
 const QuickChart = require("quickchart-js");
 const archiver = require("archiver");
 const { default: axios } = require("axios");
+const iconv = require("iconv-lite");
 
 module.exports = class SampleController {
   static index(req, res) {
@@ -83,6 +84,7 @@ module.exports = class SampleController {
     const filePath = req.file.path;
 
     fs.createReadStream(filePath)
+      .pipe(iconv.decodeStream("latin1"))
       .pipe(csv({ separator: ";" }))
       .on("data", (row) => {
         const key = `${row["Ponto"]}_${row["Data"]}`;
@@ -258,7 +260,7 @@ module.exports = class SampleController {
                 },
               },
               y: {
-                type: "logarithmic",
+                type: "linear",
                 title: {
                   display: true,
                   text: `${parameter}`,
@@ -285,7 +287,7 @@ module.exports = class SampleController {
                   { x: initialDate, y: dbParam.minValue },
                   { x: finalDate, y: dbParam.minValue },
                 ],
-                borderColor: "red",
+                borderColor: "blue",
                 borderWidth: 2,
                 borderDash: [5, 5],
                 pointRadius: 0,
@@ -318,7 +320,7 @@ module.exports = class SampleController {
                 },
               },
               y: {
-                type: "logarithmic",
+                type: "linear",
                 title: {
                   display: true,
                   text: `${parameter}`,
@@ -328,7 +330,125 @@ module.exports = class SampleController {
           },
         };
       } else if (dbParam.minValue && dbParam.maxValue) {
+        configuration = {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: `${parameter}`,
+                data: chartData,
+                backgroundColor: "rgba(0, 123, 255, 1)",
+                borderColor: "rgba(0, 123, 255, 1)",
+              },
+              {
+                type: "line",
+                label: "Valor máximo permitido",
+                data: [
+                  { x: initialDate, y: dbParam.maxValue },
+                  { x: finalDate, y: dbParam.maxValue },
+                ],
+                borderColor: "red",
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
+              {
+                type: "line",
+                label: "Valor mínimo permitido",
+                data: [
+                  { x: initialDate, y: dbParam.minValue },
+                  { x: finalDate, y: dbParam.minValue },
+                ],
+                borderColor: "blue",
+                borderWidth: 2,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                fill: false,
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: `Série histórica do ${parameter} para o ${point}`,
+                font: { size: 18 },
+              },
+              legend: {
+                position: "bottom",
+              },
+            },
+            scales: {
+              x: {
+                type: "time",
+                time: {
+                  unit: "month",
+                  displayFormats: {
+                    month: "MMM/yyyy",
+                  },
+                },
+                title: {
+                  display: false,
+                },
+              },
+              y: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: `${parameter}`,
+                },
+              },
+            },
+          },
+        };
       } else if (!dbParam.minValue && !dbParam.maxValue) {
+        configuration = {
+          type: "scatter",
+          data: {
+            datasets: [
+              {
+                label: `${parameter}`,
+                data: chartData,
+                backgroundColor: "rgba(0, 123, 255, 1)",
+                borderColor: "rgba(0, 123, 255, 1)",
+              },
+            ],
+          },
+          options: {
+            plugins: {
+              title: {
+                display: true,
+                text: `Série histórica do ${parameter} para o ${point}`,
+                font: { size: 18 },
+              },
+              legend: {
+                position: "bottom",
+              },
+            },
+            scales: {
+              x: {
+                type: "time",
+                time: {
+                  unit: "month",
+                  displayFormats: {
+                    month: "MMM/yyyy",
+                  },
+                },
+                title: {
+                  display: false,
+                },
+              },
+              y: {
+                type: "linear",
+                title: {
+                  display: true,
+                  text: `${parameter}`,
+                },
+              },
+            },
+          },
+        };
       }
     } else {
       return;
